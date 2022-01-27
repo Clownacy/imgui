@@ -392,7 +392,6 @@ You can use `Metrics/Debugger->Fonts->Font->Input Glyphs Overlap Detection Tool`
 - You can however use `imgui_freetype.cpp` from the [misc/freetype/](https://github.com/ocornut/imgui/tree/master/misc/freetype) folder. Compile with this file and add `#define IMGUI_ENABLE_FREETYPE` to your imconfig.h file or build system to automatically activate it.
 - FreeType supports auto-hinting which tends to improve the readability of small fonts. It makes a big difference especially at smaller resolutions.
 - Read documentation in the [misc/freetype/](https://github.com/ocornut/imgui/tree/master/misc/freetype) folder.
-- Correct sRGB space blending will have an important effect on your font rendering quality.
 
 ##### [Return to Index](#index)
 
