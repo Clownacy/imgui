@@ -370,6 +370,24 @@ static ImGuiViewport* ImGui_ImplSDL2_GetViewportForWindowID(Uint32 window_id)
     return (window_id == bd->WindowID) ? ImGui::GetMainViewport() : nullptr;
 }
 
+static void ImGui__ImplSDL2_AddMousePosEvent(float x, float y)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplSDL2_Data* bd = ImGui_ImplSDL2_GetBackendData();
+
+    int w, h;
+    int display_w, display_h;
+    SDL_GetWindowSize(bd->Window, &w, &h);
+    if (bd->Renderer != nullptr)
+        SDL_GetRendererOutputSize(bd->Renderer, &display_w, &display_h);
+    else
+        SDL_GL_GetDrawableSize(bd->Window, &display_w, &display_h);
+
+    const ImVec2 scale = ImVec2((float)display_w / w, (float)display_h / h);
+
+    io.AddMousePosEvent(x * scale.x, y * scale.y);
+}
+
 // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
 // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
 // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
@@ -388,7 +406,7 @@ bool ImGui_ImplSDL2_ProcessEvent(const SDL_Event* event)
                 return false;
             ImVec2 mouse_pos((float)event->motion.x, (float)event->motion.y);
             io.AddMouseSourceEvent(event->motion.which == SDL_TOUCH_MOUSEID ? ImGuiMouseSource_TouchScreen : ImGuiMouseSource_Mouse);
-            io.AddMousePosEvent(mouse_pos.x, mouse_pos.y);
+            ImGui__ImplSDL2_AddMousePosEvent(mouse_pos.x, mouse_pos.y);
             return true;
         }
         case SDL_MOUSEWHEEL:
@@ -710,7 +728,7 @@ static void ImGui_ImplSDL2_UpdateMouseData()
             SDL_GetWindowPosition(focused_window, &window_x, &window_y);
             mouse_x -= window_x;
             mouse_y -= window_y;
-            io.AddMousePosEvent((float)mouse_x, (float)mouse_y);
+            ImGui__ImplSDL2_AddMousePosEvent((float)mouse_x, (float)mouse_y);
         }
     }
 }
@@ -875,22 +893,13 @@ static void ImGui_ImplSDL2_UpdateGamepads()
 static void ImGui_ImplSDL2_GetWindowSizeAndFramebufferScale(SDL_Window* window, SDL_Renderer* renderer, ImVec2* out_size, ImVec2* out_framebuffer_scale)
 {
     int w, h;
-    int display_w, display_h;
     SDL_GetWindowSize(window, &w, &h);
     if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
         w = h = 0;
-    if (renderer != nullptr)
-        SDL_GetRendererOutputSize(renderer, &display_w, &display_h);
-#if SDL_HAS_VULKAN
-    else if (SDL_GetWindowFlags(window) & SDL_WINDOW_VULKAN)
-        SDL_Vulkan_GetDrawableSize(window, &display_w, &display_h);
-#endif
-    else
-        SDL_GL_GetDrawableSize(window, &display_w, &display_h);
     if (out_size != nullptr)
         *out_size = ImVec2((float)w, (float)h);
     if (out_framebuffer_scale != nullptr)
-        *out_framebuffer_scale = (w > 0 && h > 0) ? ImVec2((float)display_w / (float)w, (float)display_h / (float)h) : ImVec2(1.0f, 1.0f);
+        *out_framebuffer_scale = ImVec2(1.0f, 1.0f);
 }
 
 void ImGui_ImplSDL2_NewFrame()
@@ -915,7 +924,7 @@ void ImGui_ImplSDL2_NewFrame()
     {
         bd->MouseWindowID = 0;
         bd->MouseLastLeaveFrame = 0;
-        io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+        ImGui__ImplSDL2_AddMousePosEvent(-FLT_MAX, -FLT_MAX);
     }
 
     ImGui_ImplSDL2_UpdateMouseData();
