@@ -312,6 +312,21 @@ static ImGuiViewport* ImGui_ImplSDL3_GetViewportForWindowID(SDL_WindowID window_
     return (window_id == bd->WindowID) ? ImGui::GetMainViewport() : nullptr;
 }
 
+static void ImGui__ImplSDL3_AddMousePosEvent(float x, float y)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplSDL3_Data* bd = ImGui_ImplSDL3_GetBackendData();
+
+    int w, h;
+    int display_w, display_h;
+    SDL_GetWindowSize(bd->Window, &w, &h);
+    SDL_GetWindowSizeInPixels(bd->Window, &display_w, &display_h);
+
+    const ImVec2 scale = ImVec2((float)display_w / w, (float)display_h / h);
+
+    io.AddMousePosEvent(x * scale.x, y * scale.y);
+}
+
 // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
 // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
 // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
@@ -331,7 +346,7 @@ bool ImGui_ImplSDL3_ProcessEvent(const SDL_Event* event)
                 return false;
             ImVec2 mouse_pos((float)event->motion.x, (float)event->motion.y);
             io.AddMouseSourceEvent(event->motion.which == SDL_TOUCH_MOUSEID ? ImGuiMouseSource_TouchScreen : ImGuiMouseSource_Mouse);
-            io.AddMousePosEvent(mouse_pos.x, mouse_pos.y);
+            ImGui__ImplSDL3_AddMousePosEvent(mouse_pos.x, mouse_pos.y);
             return true;
         }
         case SDL_EVENT_MOUSE_WHEEL:
@@ -591,7 +606,7 @@ static void ImGui_ImplSDL3_UpdateMouseData()
             int window_x, window_y;
             SDL_GetGlobalMouseState(&mouse_x_global, &mouse_y_global);
             SDL_GetWindowPosition(focused_window, &window_x, &window_y);
-            io.AddMousePosEvent(mouse_x_global - window_x, mouse_y_global - window_y);
+            ImGui__ImplSDL3_AddMousePosEvent(mouse_x_global - window_x, mouse_y_global - window_y);
         }
     }
 }
@@ -736,14 +751,10 @@ void ImGui_ImplSDL3_NewFrame()
 
     // Setup display size (every frame to accommodate for window resizing)
     int w, h;
-    int display_w, display_h;
-    SDL_GetWindowSize(bd->Window, &w, &h);
+    SDL_GetWindowSizeInPixels(bd->Window, &w, &h);
     if (SDL_GetWindowFlags(bd->Window) & SDL_WINDOW_MINIMIZED)
         w = h = 0;
-    SDL_GetWindowSizeInPixels(bd->Window, &display_w, &display_h);
     io.DisplaySize = ImVec2((float)w, (float)h);
-    if (w > 0 && h > 0)
-        io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);
 
     // Setup time step (we don't use SDL_GetTicks() because it is using millisecond resolution)
     // (Accept SDL_GetPerformanceCounter() not returning a monotonically increasing value. Happens in VMs and Emscripten, see #6189, #6114, #3644)
@@ -758,7 +769,7 @@ void ImGui_ImplSDL3_NewFrame()
     {
         bd->MouseWindowID = 0;
         bd->MousePendingLeaveFrame = 0;
-        io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+        ImGui__ImplSDL3_AddMousePosEvent(-FLT_MAX, -FLT_MAX);
     }
 
     ImGui_ImplSDL3_UpdateMouseData();
