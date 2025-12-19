@@ -893,7 +893,14 @@ static void ImGui_ImplSDL2_UpdateGamepads()
 static void ImGui_ImplSDL2_GetWindowSizeAndFramebufferScale(SDL_Window* window, SDL_Renderer* renderer, ImVec2* out_size, ImVec2* out_framebuffer_scale)
 {
     int w, h;
-    SDL_GetWindowSize(window, &w, &h);
+    if (renderer != nullptr)
+        SDL_GetRendererOutputSize(renderer, &w, &h);
+#if SDL_HAS_VULKAN
+    else if (SDL_GetWindowFlags(window) & SDL_WINDOW_VULKAN)
+        SDL_Vulkan_GetDrawableSize(window, &w, &h);
+#endif
+    else
+        SDL_GL_GetDrawableSize(window, &w, &h);
     if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
         w = h = 0;
     if (out_size != nullptr)

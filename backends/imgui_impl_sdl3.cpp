@@ -840,7 +840,7 @@ static void ImGui_ImplSDL3_UpdateGamepads()
 static void ImGui_ImplSDL3_GetWindowSizeAndFramebufferScale(SDL_Window* window, ImVec2* out_size, ImVec2* out_framebuffer_scale)
 {
     int w, h;
-    SDL_GetWindowSize(window, &w, &h);
+    SDL_GetWindowSizeInPixels(window, &w, &h);
     if (SDL_GetWindowFlags(window) & SDL_WINDOW_MINIMIZED)
         w = h = 0;
 
